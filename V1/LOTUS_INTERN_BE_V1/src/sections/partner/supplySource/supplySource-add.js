@@ -1,0 +1,417 @@
+import React from "react";
+import { useState, useEffect } from "react";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Grid from "@mui/material/Grid";
+import { Tab, Tabs, Divider, AppBar, Checkbox } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import axios from "axios";
+import { Box } from "@mui/system";
+import Dialog from "@mui/material/Dialog";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+const validationSchema = Yup.object({});
+
+const initialValues = {
+  typeSupplySource: "",
+  name: "",
+  cityPerson: [],
+  phone: "",
+  email: "",
+  personalDescription: "",
+  city: "",
+  cityDescription: "",
+};
+
+const typeSupplySourceOption = [
+  { value: 1, label: "Cá nhân" },
+  { value: 2, label: "Tỉnh / thành phố" },
+  { value: 3, label: "Bộ lao động thương binh" },
+  { value: 4, label: "Trung tâm giáo dục thường xuyên" },
+];
+
+const fetchData = async () => {
+  try {
+    const response = await axios.get("https://erp2.a.tisbase.online/api/v2/Location/getCities");
+    const cities = response.data.map((city) => ({ label: city.name, value: city.id })); // Assuming the response contains an array of cities
+    return cities;
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+};
+
+export default function AddSupplySource({ open, onClose }) {
+  const [cityOptions, setCityOptions] = useState([]);
+  const [tabValue, setTabValue] = useState(0); // Initialize tab value
+  console.log(cityOptions);
+
+  useEffect(() => {
+    const fetchDataAndSetOptions = async () => {
+      const cities = await fetchData();
+      setCityOptions(cities);
+    };
+
+    fetchDataAndSetOptions();
+  }, []);
+
+  const handleChangeTab = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
+
+  const formik = useFormik({
+    initialValues,
+    validationSchema,
+    onSubmit: async (values, helpers) => {
+      try {
+        const data = JSON.stringify(values);
+
+        console.log(values);
+      } catch (err) {
+        helpers.setStatus({ success: false });
+        helpers.setErrors({ submit: err.message });
+        helpers.setSubmitting(false);
+      }
+    },
+  });
+
+  return (
+    <Dialog open={open} onClose={handleClose}>
+      <form onSubmit={formik.handleSubmit}>
+        <AppBar sx={{ position: "relative", backgroundColor: "#1C2536", padding: "16px" }}>
+          <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+            Chọn loại cung ứng
+          </Typography>
+        </AppBar>
+        {/* <Box sx={{ borderColor: "divider" }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleChangeTab}
+            textColor="inherit"
+            variant="fullWidth"
+          >
+            
+            <Tab label="Cá nhân"/>
+            <Tab label="Tỉnh / thành phố" /> 
+          </Tabs>
+        </Box> */}
+
+        <Box
+          sx={{
+            padding: "0 16px 16px 16px",
+            width: "600px",
+            height: "400px",
+          }}
+        >
+          <Autocomplete
+            error={!!(formik.touched.typeSupplySource && formik.errors.typeSupplySource)}
+            helperText={formik.touched.typeSupplySource && formik.errors.typeSupplySource}
+            onBlur={formik.handleBlur}
+            onChange={(event, newValue) => formik.setFieldValue("typeSupplySource", newValue)}
+            value={formik.values.typeSupplySource}
+            name="typeSupplySource"
+            sx={{ margin: "0 auto", marginTop: "15px", width: "80%" }}
+            required
+            options={typeSupplySourceOption}
+            renderInput={(params) => (
+              <TextField variant="outlined" {...params} label={"Loại cung ứng"} />
+            )}
+          />
+          {formik.values.typeSupplySource === null ? null : formik.values.typeSupplySource.value ===
+            1 ? (
+            <Box
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <TextField
+                error={!!(formik.touched.name && formik.errors.name)}
+                helperText={formik.touched.name && formik.errors.name}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.name}
+                size="small"
+                variant="outlined"
+                name="name"
+                required
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                label="Tên"
+              />
+              <Autocomplete
+                error={!!(formik.touched.cityPerson && formik.errors.cityPerson)}
+                helperText={formik.touched.cityPerson && formik.errors.cityPerson}
+                onBlur={formik.handleBlur}
+                onChange={(event, newValue) => formik.setFieldValue("cityPerson", newValue)}
+                value={formik.values.cityPerson}
+                name="cityPerson"
+                multiple
+                limitTags={3}
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                disableCloseOnSelect
+                size="small"
+                options={cityOptions}
+                renderOption={(props, optionRole, { selected }) => (
+                  <li {...props}>
+                    <Checkbox
+                      icon={icon}
+                      checkedIcon={checkedIcon}
+                      style={{ marginRight: 8 }}
+                      checked={selected}
+                    />
+                    {optionRole.label}
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <TextField variant="outlined" {...params} label={"Tỉnh / thành phố"} />
+                )}
+              />
+              <TextField
+                error={!!(formik.touched.phone && formik.errors.phone)}
+                helperText={formik.touched.phone && formik.errors.phone}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.phone}
+                size="small"
+                variant="outlined"
+                name="phone"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Số điện thoại"
+              />
+              <TextField
+                error={!!(formik.touched.email && formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.email}
+                size="small"
+                variant="outlined"
+                name="email"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Email"
+              />
+              <TextField
+                error={!!(formik.touched.descriptionPerson && formik.errors.descriptionPerson)}
+                helperText={formik.touched.descriptionPerson && formik.errors.descriptionPerson}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.descriptionPerson}
+                size="small"
+                variant="outlined"
+                multiline
+                name="descriptionPerson"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                label="Ghi chú"
+              />
+            </Box>
+          ) : formik.values.typeSupplySource.value === 2 ? (
+            <Box
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <Autocomplete
+                error={!!(formik.touched.city && formik.errors.city)}
+                helperText={formik.touched.city && formik.errors.city}
+                onBlur={formik.handleBlur}
+                onChange={(event, newValue) => formik.setFieldValue("city", newValue)}
+                value={formik.values.city}
+                name="city"
+                sx={{ margin: "0 auto", marginTop: "20px", width: "80%" }}
+                size="small"
+                required
+                autoHighlight
+                options={cityOptions}
+                renderInput={(params) => (
+                  <TextField
+                    variant="outlined"
+                    {...params}
+                    label={"Tỉnh / thành phố"}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                )}
+              />
+              <TextField
+                error={!!(formik.touched.descriptionCity && formik.errors.descriptionCity)}
+                helperText={formik.touched.descriptionCity && formik.errors.descriptionCity}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.descriptionCity}
+                size="small"
+                variant="outlined"
+                name="descriptionCity"
+                multiline
+                sx={{ margin: "10px auto 30px", width: "80%" }}
+                label="Ghi chú"
+                margin="normal"
+              />
+            </Box>
+          ) : formik.values.typeSupplySource.value === 3 ? (
+            <Box
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <TextField
+                error={!!(formik.touched.personInCharge && formik.errors.personInCharge)}
+                helperText={formik.touched.personInCharge && formik.errors.personInCharge}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.personInCharge}
+                size="small"
+                variant="outlined"
+                name="name"
+                required
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                label="Người phụ trách"
+              />
+              <TextField
+                error={!!(formik.touched.phone && formik.errors.phone)}
+                helperText={formik.touched.phone && formik.errors.phone}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.phone}
+                size="small"
+                variant="outlined"
+                name="phone"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Số điện thoại"
+              />
+              <TextField
+                error={!!(formik.touched.email && formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.email}
+                size="small"
+                variant="outlined"
+                name="email"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Email"
+              />
+              <TextField
+                error={!!(formik.touched.descriptionCity && formik.errors.descriptionCity)}
+                helperText={formik.touched.descriptionCity && formik.errors.descriptionCity}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.descriptionCity}
+                size="small"
+                variant="outlined"
+                name="descriptionCity"
+                multiline
+                sx={{ margin: "10px auto 30px", width: "80%" }}
+                label="Ghi chú"
+                margin="normal"
+              />
+            </Box>
+          ) : formik.values.typeSupplySource.value === 4 ? (
+            <Box
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <TextField
+                error={!!(formik.touched.personInCharge && formik.errors.personInCharge)}
+                helperText={formik.touched.personInCharge && formik.errors.personInCharge}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.personInCharge}
+                size="small"
+                variant="outlined"
+                name="name"
+                required
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                label="Người phụ trách"
+              />
+              <TextField
+                error={!!(formik.touched.phone && formik.errors.phone)}
+                helperText={formik.touched.phone && formik.errors.phone}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.phone}
+                size="small"
+                variant="outlined"
+                name="phone"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Số điện thoại"
+              />
+              <TextField
+                error={!!(formik.touched.email && formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.email}
+                size="small"
+                variant="outlined"
+                name="email"
+                sx={{ margin: "0 auto", marginTop: "10px", width: "80%" }}
+                required
+                label="Email"
+              />
+              <TextField
+                error={!!(formik.touched.descriptionCity && formik.errors.descriptionCity)}
+                helperText={formik.touched.descriptionCity && formik.errors.descriptionCity}
+                onBlur={formik.handleBlur}
+                onChange={formik.handleChange}
+                value={formik.values.descriptionCity}
+                size="small"
+                variant="outlined"
+                name="descriptionCity"
+                multiline
+                sx={{ margin: "10px auto 30px", width: "80%" }}
+                label="Ghi chú"
+                margin="normal"
+              />
+            </Box>
+          ) : null}
+
+          <Box
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              sx={{
+                paddingLeft: "40px",
+                paddingRight: "40px",
+                fontSize: 16,
+                backgroundColor: "#1C2536",
+                marginTop: "20px",
+              }}
+            >
+              Lưu
+            </Button>
+          </Box>
+        </Box>
+      </form>
+    </Dialog>
+  );
+}
